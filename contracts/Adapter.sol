@@ -114,7 +114,7 @@ contract Adapter {
     /**  
     * @notice This function allows you to swap some tokens for another tokens with all amount of first tokens.
     * @dev This function transfer first tokens from user account to contract, get approve to router 
-    and void swap function from router 
+    and void swapExactTokensForTokens function from router 
     * @param _firstToken is the address of first token.
     * @param _secondToken is the address of second token.
     * @param _firstAmount is the amount of transfer first tokens.
@@ -125,30 +125,33 @@ contract Adapter {
         uint256 _firstAmount
     ) public {
         address[] memory path = new address[](2);
+        uint256[] memory amounts = new uint256[](2);
         path[0] = _firstToken;
         path[1] = _secondToken;
         ERC20(_firstToken).transferFrom(msg.sender, address(this), _firstAmount);
         ERC20(_firstToken).approve(routerAddress, _firstAmount);
-        IUniswapV2Router02(routerAddress).swapExactTokensForTokens(
+        amounts = IUniswapV2Router02(routerAddress).swapExactTokensForTokens(
             _firstAmount,
             1,
             path,
             msg.sender,
             (block.timestamp + 120)
         );
+        if (_firstAmount - amounts[0] > 0)
+            ERC20(_firstToken).transfer(msg.sender, _firstAmount - amounts[0]);
         emit MaxSwap(
             msg.sender,
             _firstToken,
             _secondToken,
-            _firstAmount,
-            1234
+            amounts[0],
+            amounts[1]
         );
     }
 
     /**  
     * @notice This function allows you to swap some tokens for another tokens.
     * @dev This function transfer first tokens from user account to contract, get approve to router 
-    and void swap function from router 
+    and void swapTokensForExactTokens function from router 
     * @param _firstToken is the address of first token.
     * @param _secondToken is the address of second token.
     * @param _firstAmount is the amount of transfer first tokens.
@@ -161,23 +164,26 @@ contract Adapter {
         uint256 _secondAmount
     ) public {
         address[] memory path = new address[](2);
+        uint256[] memory amounts = new uint256[](2);
         path[0] = _firstToken;
         path[1] = _secondToken;
         ERC20(_firstToken).transferFrom(msg.sender, address(this), _firstAmount);
         ERC20(_firstToken).approve(routerAddress, _firstAmount);
-        IUniswapV2Router02(routerAddress).swapTokensForExactTokens(
+        amounts = IUniswapV2Router02(routerAddress).swapTokensForExactTokens(
             _secondAmount,
             _firstAmount,
             path,
             msg.sender,
             (block.timestamp + 120)
         );
+        if (_firstAmount - amounts[0] > 0)
+            ERC20(_firstToken).transfer(msg.sender, _firstAmount - amounts[0]);
         emit MinSwap(
             msg.sender,
             _firstToken,
             _secondToken,
-            _firstAmount,
-            _secondAmount
+            amounts[0],
+            amounts[1]
         );
     }
 
